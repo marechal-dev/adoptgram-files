@@ -4,6 +4,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const (
+	ServerDefaultAddress = "0.0.0.0"
+)
+
 type Server struct {
 	router *gin.Engine
 }
@@ -16,10 +20,14 @@ func NewServer() *Server {
 	return server
 }
 
-func (server *Server) setupRouter() {
+func (s *Server) setupRouter() {
 	router := gin.Default()
 
 	// Routes here
 
-	server.router = router
+	s.router = router
+}
+
+func (s *Server) SpinUp(addr string) {
+	s.router.Run(addr)
 }
