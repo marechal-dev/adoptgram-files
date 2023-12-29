@@ -1,10 +1,10 @@
 package controllers
 
 import (
-	"log"
+	"fmt"
 	"net/http"
+	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/gin-gonic/gin"
@@ -16,16 +16,8 @@ type UploadMediasController struct {
 	uploader *s3manager.Uploader
 }
 
-func NewUploadMediasController() *UploadMediasController {
-	session, err := session.NewSession(&aws.Config{
-		Region: aws.String("auto"),
-	})
-
-	if err != nil {
-		log.Fatal("Could not create an AWS Session")
-	}
-
-	uploader := s3manager.NewUploader(session)
+func NewUploadMediasController(s3Session *session.Session) *UploadMediasController {
+	uploader := s3manager.NewUploader(s3Session)
 
 	return &UploadMediasController{
 		uploader: uploader,
@@ -50,16 +42,19 @@ func (umc *UploadMediasController) Handler(ctx *gin.Context) {
 			return
 		}
 
-		fileKey, err := services.GetFileKeyService(file.Filename)
+		fileIdentifier, err := services.GetFileKeyService(file.Filename)
 
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, responses.NewCouldNotParseFileResponse())
 			return
 		}
 
-		go services.UploadFileToR2(umc.uploader, buffer, fileKey, "image/png")
+		fileExtension := strings.Split(file.Filename, ".")[1]
+		fileType := fmt.Sprintf("image/%s", fileExtension)
 
-		filesUrls = append(filesUrls, fileKey)
+		go services.UploadFileToR2(umc.uploader, buffer, fileIdentifier, fileType)
+
+		filesUrls = append(filesUrls, fileIdentifier)
 	}
 
 	successResponse := responses.NewMediasCreatedResponse(filesUrls)
