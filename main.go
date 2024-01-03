@@ -17,13 +17,19 @@ import (
 func main() {
 	err := godotenv.Load(".env")
 
+	appEnv := os.Getenv("APP_ENV")
+
+	if appEnv == "development" {
+		os.Setenv("AWS_BUCKET_NAME", "adoptgram-files-test")
+	}
+
 	port, err := strconv.Atoi(os.Getenv("PORT"))
 
 	if err != nil {
 		log.Fatal("Could not find/parse \"PORT\" env variable")
 	}
 
-	serverAddr := fmt.Sprintf("0.0.0.0:%d", port)
+	serverAddr := fmt.Sprintf("127.0.0.1:%d", port)
 
 	router := gin.Default()
 
@@ -43,8 +49,8 @@ func main() {
 	uploadMediasController := controllers.NewUploadMediasController(session)
 	uploadMediaController := controllers.NewUploadMediaController(session)
 
-	router.POST("/media/upload", uploadMediaController.Handler)
-	router.POST("/medias/upload", uploadMediasController.Handler)
+	router.POST("/api/media/upload", uploadMediaController.Handler)
+	router.POST("/api/media/bulk-upload", uploadMediasController.Handler)
 
 	router.Run(serverAddr)
 }
